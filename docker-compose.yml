@@ -17,6 +17,11 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      # Force maximum GPU offloading to reduce RAM usage
+      OLLAMA_FLASH_ATTENTION: "1" # halves KV-cache VRAM, frees RAM
+      OLLAMA_GPU_OVERHEAD: "0" # no RAM reserved for GPU overhead
+      OLLAMA_NUM_PARALLEL: "1" # single request at a time (saves RAM)
     # Comment to disable GPU support (requires nvidia-container-toolkit)
     deploy:
       resources:

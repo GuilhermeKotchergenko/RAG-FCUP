@@ -38,9 +38,10 @@ LLM_MODEL = os.getenv("LLM_MODEL", "llama3.1:8b")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
 
 # How many chunks to retrieve
-TOP_K = 5
+TOP_K = 3
 # Minimum similarity threshold (cosine, 0–1)
-SIMILARITY_CUTOFF = 0.3
+# Keep this high enough to reject off-topic chunks and prevent hallucinations.
+SIMILARITY_CUTOFF = 0.45
 
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
