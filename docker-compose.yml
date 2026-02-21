@@ -1,0 +1,81 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: rag_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Comment to disable GPU support (requires nvidia-container-toolkit)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rag_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ragfcup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-ragfcup}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: rag_api
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    env_file: .env
+    depends_on:
+      - postgres
+      - qdrant
+      - ollama
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
+
+  chainlit:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: rag_chainlit
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - api
+      - qdrant
+      - ollama
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: chainlit run frontend/app.py --host 0.0.0.0 --port 8000
+
+volumes:
+  qdrant_data:
+  ollama_data:
+  postgres_data:
